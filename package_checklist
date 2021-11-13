@@ -1,0 +1,95 @@
+#!/bin/bash
+#++ Description:  
+#######################  README ############################################################
+# A simple bash script for checking if frequently used binaries of a user  are installed 
+# in a Debian/-based system after a fresh installation. The script will install 
+# the packages that are not installed.
+# For more automation add the -y swith to apt install.
+# The script is tested on Debain 11 [Bullseye] x64
+# Thanks https://github.com/shams-imran for inspiring me writing bash scripts again. 
+# Ishtiaque Foysol              V0 created on January 1, 2020 Wed [Happy New Year]
+# Updated to V1.0 and tested on  November 13, 2021
+############################################################################################
+
+
+    # Important references for further study
+    # https://unix.stackexchange.com/questions/68694/when-is-double-quoting-necessary
+    # https://linuxconfig.org/how-to-use-arrays-in-bash-script
+    # https://linuxize.com/post/how-to-compare-strings-in-bash/
+
+# Code starts from  here .... 
+###################### COLORS ######################################
+export COLOR_NC='\e[0m' # No Color
+export COLOR_RED='\e[1;31m'
+####################################################################
+# frequently used packages
+my_packages=( "su"
+              "sudo"  
+              "python3"
+              "vim"
+              "firefox"
+              "vlc"
+              "gimp"
+	      "nmap"
+	      "deluge"	
+	      )
+
+declare -a to_install  # declare an indexed array of packages to be installed            
+
+for package in "${my_packages[@]}"; do
+     status=$(which "$package" ) 
+   #echo $status 
+    if [[ "$status" ]]; then
+        echo "[+] $package is installed"
+    fi
+    if [[ -z "$status" ]]; then # if the status variable is null
+        echo "[-] $package is not installed"
+        to_install+=($package) # append an uninstalled package 
+    fi
+   done
+
+echo -e "${COLOR_RED}[!]following packages will be installed" 
+echo "${to_install[*]}"   
+
+read -p "[!] proceed ? [Y/n] " proceed 
+echo -e "${COLOR_NC}"
+
+if [[ "$proceed" == "Y" ]]; then
+    echo -e "${COLOR_NC}[+] OK .. handing the task over to your package manager..."
+    #add a loop for array and package manager commands ...
+    echo "updating and upgrading apt"
+    apt update && apt upgrade 			
+    for package in "${to_install[@]}"; do
+	echo "[!]installing $package"
+	apt install "$package"
+    done
+    else
+	echo "[!]please enter Capital Y"
+	exit			
+fi 
+
+# Check for pip3
+pipStat=$(which pip3)
+if [[ "$pipStat" ]]; then
+	echo "[+]pip3 is installed already"
+else
+	echo "[-]pip3 isn't installed"
+	echo "[+]installing pip3"
+	apt install python3-pip
+fi
+
+# install needed python thirdparty apps
+echo "[+]generating requirements.txt file"
+cat <<EOF > requirements.txt
+beautifulsoup4==4.10.0
+scapy==2.4.5  
+EOF
+iam="$(users)" # [!]Needs improvement
+echo -e "${COLOR_RED}[+]installing following python packages "
+cat requirements.txt
+echo  "[+]installing python packages as"
+sudo -u "$iam" whoami
+sudo -u "$iam" pip3 install -r requirements.txt
+echo -e "${COLOR_NC}"
+echo "[+]All installtion done"
+echo "================================================="
