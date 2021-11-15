@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+import sqlite3
+import os
+#========================================================
+# A simple script to retrieve bookmarks from firefox
+# Ishtiaque Foysol February 8, 2018 Thursday
+#========================================================
+
+user = os.getlogin()
+path='/home/'+user+'/.mozilla/firefox/' 
+dirs = os.listdir(path)
+
+for dt in dirs:
+    if 'default-esr' in dt:
+        path += dt+'/places.sqlite'
+        break
+
+query = "select * from moz_places inner join moz_bookmarks on moz_places.id = moz_bookmarks.fk"
+
+foxConn = sqlite3.connect(path)
+cursor = foxConn.cursor()
+
+for row in cursor.execute(query):
+    title = row[2]
+    url = row[1]
+    out = open('bookmarks','a')
+    out.write("%s  %s\n" %(title,url))
+    out.close()
+    print("%s  %s" %(title,url))
+

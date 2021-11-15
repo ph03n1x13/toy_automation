@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+
+# necessary libraries...
+import requests
+from bs4 import BeautifulSoup
+import json
+import re
+import signal
+
+##########################################################################################################
+# imdb_scrape is an interactive python script for doing basic search and details of a movie. 
+# mainly this utility is a personal initiative to minimize less time on colorful browsing time
+# and getting basic info about movies before download.
+# Also a part of 2019 initiative to understand how does an http response work, programming about it 
+# and some geeky query. 
+# Ishtiaque Foysol January 15, 2018 Tuesday[first issue]...
+###########################################################################################################
+
+# handle signal 
+
+def handle_signal(rcv_sig, frame):
+    print("Exiting.....")
+    exit(0)
+
+# routine for fetching raw html data
+def get_raw_html(url): 
+    try:
+        response = requests.get(url)
+        raw_html = BeautifulSoup(response.text,"html.parser")
+        response.close()
+        return raw_html
+    except ConnectionError as ce:
+        print("Error {}".format(ce))
+
+# get search result from search string
+def search_result(raw_html):
+    result = raw_html.find_all("td", {"class": "result_text"})
+    if len(result) <= 0:
+        print("[-]No search result found in imdb....")
+    # else print results
+    for content in result:
+        if "tt" in content.a.get("href"): # if there's a movie title like /^tt[0-9]/
+            print("title: %s id: %s" % (content.get_text(),content.a.get("href").split("/")[2]))
+        else:
+            print(content.get_text())
+    
+# routine to fetch json data from raw html
+def html_to_json(raw_html):
+    # scrape raw json data from raw html
+    json_data = raw_html.find(attrs={"type":"application/ld+json"})
+    if json_data is None:
+        print("[-]no json data available.....")
+        return None
+    else:
+        loaded_json = json.loads(json_data.text.strip())
+        #print(loaded_json)
+        return loaded_json 
+
+# parse loaded json data
+def parse_loaded_json(loaded_json):
+    keys_of_interest = [ 
+                         "name","genre","contentRating", 
+                         "image","director","duration",
+                         "actor", "description","aggregateRating",  
+                       ]    
+    for key in keys_of_interest:
+        try:
+            info = loaded_json[key]
+            if key == "director" or key == "actor":
+                print("{}: ".format(key))
+                parse_name(loaded_json[key])
+            else:
+                print("%s : %s "%(key,info))
+        except KeyError as kE:
+            print("[-]no \"{}\" key".format(key))
+            continue    
+######################################## Parsers ####################################
+def parse_name(persons):
+    if isinstance(persons,dict):
+        for k,v in persons.items():
+            if k == "name":
+                print(v)
+    elif isinstance(persons,list):
+        for person in persons:
+            if person["@type"] == "Person":
+                print(person["name"])
+#################################### Main function ###############################
+
+# an interactive session for searching and fetching
+def main():
+    url = "https://www.imdb.com/title/"
+    search = "https://www.imdb.com/find?ref_=nv_sr_fn&q="
+    # fire up a pseudo shell-like interactive session
+    while True:
+        print("keywords, title-id(tt1234567), press ctl+z or ctl+c:" ) 
+        case = input("[imdb_interactive]% ")
+        if re.match("^tt[0-9]{7}",case): # if user gives an id as input -- tt following 7 ints
+            movie_details = url + case
+            raw_html = get_raw_html(movie_details)
+            if html_to_json(raw_html): # if json data or movie details found
+                loaded_json = html_to_json(raw_html)
+                parse_loaded_json(loaded_json)
+        else:
+            search_url = search + case.replace(" ", "+") + "&s=all"
+            print("searching imdb for \"%s\".........\n" % case)
+            raw_html = get_raw_html(search_url)
+            search_result(raw_html)
+
+if  __name__ == '__main__':
+    signal.signal(signal.SIGINT,handle_signal) # exit with ctrl+c 
+    main()
