@@ -10,54 +10,61 @@
 
 printf "\033c" # literally clear the screen
 
+print_info(){
+    echo -e "\e[1;32m$1\e[0m "
+    echo "$2"    
+}
+
+print_one_line(){
+    echo -e "\e[1;32m$1\e[0m " "$2"    
+}
+
+print_alert(){
+    echo -e "\e[1;31m$1\e[0m "
+    echo "$2"    
+}
+
 # ----------------- Date Time info -------------------
 _time=`date`
-echo -e "\e[1;32mDate:\e[0m $_time" 
-
+print_info "Date: " "$_time"
 uptime=`uptime | awk '{print $3 $4}' | cut -f1 -d , `
-echo -e "\e[1;32muptime Day(s)/(H:M)-> \e[0m($uptime)"
-myShell=$(echo $SHELL)
-echo -e "\e[1;32mshell env:\e[0m $myShell" 
+print_info "uptime Day(s)/(H:M)-> " "$uptime"
+my_shell=$(echo $SHELL)
+print_info "shell env: " "$my_shell" 
 # ----------------------------------------------------
 
 
 # -------------- User Info ----------------------
-iAm=`whoami`
-echo -e "\e[1;32mI am:\e[0m $iAm"
-sp=${groups}
+i_am=`whoami`
+print_info "I am:" "$i_am"
 logged=`who`
-echo -e "\e[1;32mLogged Users: \e[0m"
-echo "$logged"
+print_info "Logged Users: " "$logged"
 # ------------------Connected Displays ------------------------
 displays=$(xrandr --query | grep connected)
-echo -e "\e[1;32mConnected Dispaly/s: \e[0m"
-echo "$displays"
+print_info "Connected Dispaly/s: " "$displays"
 packages=$(apt-cache pkgnames | wc -l)
-echo -e "\e[1;32minstalled packages:\e[0m $packages"
+print_info "installed packages: " "$packages"
 
 # -------------------- Battery Info 
 vendor=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep vendor | awk '{print $2}')
 state=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep state | awk '{print $2}')
 percentage=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage | awk '{print $2}')
 technology=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep technology | awk '{print $2}')
-timeEmpty=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep 'time to empty' | awk '{print $4,$5}')
+time_empty=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep 'time to empty' | awk '{print $4,$5}')
 
-echo -e "\e[1;32mbattery info \e[0m"
-echo -e "\e[1;32mvendor: \e[0m$vendor"
-echo -e "\e[1;32mstate: \e[0m$state"
-echo -e "\e[1;32mpercentage: \e[0m$percentage"
-echo -e "\e[1;32mtechnology: \e[0m$technology"
-echo -e "\e[1;32mtime to empty: \e[0m$timeEmpty"
-
+print_one_line "battery info: " "$vendor"
+print_one_line "state: " "$state"
+print_one_line "percentage:" "$percentage"
+print_one_line "technology:" "$technology"
+print_one_line "time to empty:" "$time_empty"
 
 # -------------------- OS Info ------------------
 
-echo -e "\e[1;32mOS Info [Dist Release KernVersion]: \e[0m"
-
+print_one_line "OS Info [Dist Release KernVersion]: "
 declare -a switches=("-o" "-r" "-v")
 for command in "${switches[@]}"
     do
-        echo `uname $command`
+        echo $(uname $command)
     done    
 distro=`cat /etc/issue`
 echo "$distro"
@@ -65,33 +72,26 @@ echo "$distro"
 # ----------------------- CPU/MoBo Info ---------------------
 
 processor=$(dmidecode -s processor-version)
-echo -e "\e[1;32mprocessor: \e[0m"   
-echo "$processor"
-echo -e "\e[1;32mcores: \e[0m"
+print_one_line "processor: " "$processor"
 cores=$(nproc)
-echo "$cores"
+print_one_line "cores: " "$cores"
 freq=$(dmidecode -s processor-frequency)
-echo -e "\e[1;32mfrequency: \e[0m"   
-echo "$freq"
+print_one_line "frequency: " "$freq"
 mobo=$(dmidecode -s baseboard-manufacturer)
-echo -e "\e[1;32mMoBo: \e[0m"   
-echo "$mobo"
+print_one_line "MoBo: " "$mobo"
 model=$(dmidecode -s baseboard-product-name)
-echo -e "\e[1;32mMoBo model: \e[0m"   
-echo "$model"
+print_one_line "MoBo model: " "$model"
 bios_vendor=$(dmidecode -s bios-vendor)
-echo -e "\e[1;32mbios vendor: \e[0m"   
-echo "$bios_vendor"
+print_one_line "bios vendor: " "$bios_vendor"
 release_date=$(dmidecode -s bios-release-date)
-echo -e "\e[1;32mrelease date: \e[0m"   
-echo "$release_date"
+print_one_line "release date: " "$release_date"
 # print bugs if exist 
 bugs=$(cat  /proc/cpuinfo  | grep bugs -m 1 | cut -f2- -d ' ' )
-echo -e "\e[1;33mbugs: \e[0m"
-echo "$bugs"
+print_alert "cpu bugs" "$bugs"
+
 # ----------- Memory Info -------------
 
-echo -e "\e[1;32mRAM:\e[0m"
+print_one_line "RAM:"
 mem_type=$(dmidecode -t 17 | grep "Type:" | awk '{print $2}')
 echo "ram type: $mem_type"
 max_cap=$(dmidecode -t 16 | grep "Maximum" | awk '{print $3$4}')
@@ -109,11 +109,11 @@ echo "free: $Mfree Gib"
 echo "swap: $swapGB GiB"
 
 # --------- Disk Info --------------------
-diskU=`df -h  | grep "File\|^/dev/sd*"` 
-echo -e "\e[1;32mDisk Use [*Mounted]: \e[0m"
-echo "$diskU"
+disk_usage=`df -h  | grep "File\|^/dev/sd*"` 
+print_one_line "disk use [*Mounted]: "
+echo "$disk_usage"
 conInfo=$(dmidecode --type connector)
-echo -e "\e[1;32mdisk connector info: \e[0m"
+print_one_line "disk connector info: "
 echo "$conInfo"
 
 check_net() {
@@ -122,20 +122,22 @@ check_net() {
 
 check_net
 if [ $? -eq 0  ] ; then 
-    echo -e "\e[1;32mNet Status:[+]Connected\e[0m"
+    print_one_line "Net Status:[+]Connected"
     gateway=$(ip route | grep "default" | cut -d" " -f3)
-    echo -e "\e[1;32mgateway(router) IP:\e[0m $gateway"
-    localIP=`hostname -I`
-    echo -e "\e[1;32mlocal IP:\e[0m $localIP"
-    pubIP=$(host  myip.opendns.com resolver1.opendns.com | grep "address" | awk '{print $4}')
-    echo -e "\e[1;32mpublic IP:\e[0m $pubIP"
+    print_one_line "gateway(router) IP:" "$gateway"
+    local_IP=`hostname -I`
+    print_one_line "local IP: " "$local_IP"
+    pub_IP=$(host  myip.opendns.com resolver1.opendns.com | grep "address" | awk '{print $4}')
+    print_one_line "public IP:" "$pub_IP"
 else
-     echo -e "\e[1;33mNet Status:[-]Not Connected\e[0m"   
-     #echo "$?"
+     print_one_line "Net Status:[-]Not Connected"   
+     
 
 fi
+connections=$(sudo ss | grep tcp | awk '{print $5, $6}')
+print_alert "TCP network connections: " "$connections"
+
 
 # ------- Frequently used service daemons ---------- 
 _ssh=$(systemctl status ssh.service | sed -n 3p | cut -d":" -f2)
-echo -e "\e[1;32mSSH daemon: \e[0m"
-echo "$_ssh"
+print_one_line "SSH daemon: " "$_ssh"
