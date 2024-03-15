@@ -1,32 +1,41 @@
 #!/usr/bin/env bash
 
 #==========================================================================================
-# snapsh is a simple script, collection of my frequently used commands after login
-# into a personal box. 
-#   
-# Ishtiaque Foysol date: December 2, 2017 Sunday
+# A utility script to investigate the systems at a glance
+#    
+# Auth: Ishtiaque Foysol 
+# Date: December 2, 2017 Sunday
 #==========================================================================================
 
-
-printf "\033c" # literally clear the screen
+ # literally clear the screen
+printf "\033c"
 
 #------- Utility methods -----------------------
+# Info in bold green
 print_info(){
     echo -e "\e[1;32m$1\e[0m "
     echo "$2"    
 }
 
+# One liner in green
 print_one_line(){
     echo -e "\e[1;32m$1\e[0m " "$2"    
 }
 
+# Print alert in red
 print_alert(){
     echo -e "\e[1;31m$1\e[0m "
     echo "$2"    
 }
 
+# Check network connectivity
 check_net() {
      ping -q -c 5 -W 1  8.8.8.8  >/dev/null 
+}
+
+# Convert bytes to megabytes
+convert_to_mb(){
+    echo -e "scale=2; $1 / (1024*1024)" | bc
 }
 
 # ----------------- Date Time info -------------------
@@ -36,13 +45,11 @@ uptime=`uptime | awk '{print $3 $4}' | cut -f1 -d , `
 print_info "uptime Day(s)/(H:M)-> " "$uptime"
 my_shell=$(echo $SHELL)
 print_info "shell env: " "$my_shell" 
-# ----------------------------------------------------
-
 
 # -------------- User Info ----------------------
-i_am=`whoami`
+i_am=$(whoami)
 print_info "I am:" "$i_am"
-logged=`who`
+logged=$(who)
 print_info "Logged Users: " "$logged"
 # ------------------Connected Displays ------------------------
 displays=$(xrandr --query | grep connected)
@@ -51,7 +58,8 @@ packages=$(apt-cache pkgnames | wc -l)
 print_info "installed packages: " "$packages"
 
 print_one_line "systems users other than root"
-awk -F':' '$3 >= 1000 {print $1 " " $3 " " $4 " " $5 " " $6 " " $7}' /etc/passwd
+systems_users=$(awk -F':' '$3 >= 1000 {print $1 " " $3 " " $4 " " $5 " " $6 " " $7}' /etc/passwd)
+print_info "systems users: " "$systems_users"
 
 # -------------------- Battery Info 
 vendor=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep vendor | awk '{print $2}')
@@ -120,10 +128,10 @@ echo "swap: $swapGB GiB"
 disk_usage=`df -h  | grep "File\|^/dev/sd*"` 
 print_one_line "disk use [*Mounted]: "
 echo "$disk_usage"
-conInfo=$(dmidecode --type connector)
-print_one_line "disk connector info: "
-echo "$conInfo"
 
+# --------- Connectors ----------------
+con_info=$(dmidecode --type connector | grep -E 'Internal Reference Designator|External Connector Type|Port Type')
+print_info "systems connectors: " "$con_info"
 check_net
 if [ $? -eq 0  ] ; then 
     print_one_line "Net Status:[+]Connected"
@@ -139,7 +147,15 @@ else
 fi
 connections=$(sudo ss | grep tcp | awk '{print $5, $6}')
 print_alert "TCP network connections: " "$connections"
+down_bytes=$(cat /proc/net/dev | grep enp2s0  | awk '{print $2}')
+up_bytes=$(cat /proc/net/dev | grep enp2s0  | awk '{print $10}')
+print_one_line "downloaded data (Megabytes): " 
+convert_to_mb "$down_bytes"
+print_one_line "uploaded data (Megabytes): " 
+convert_to_mb "$up_bytes"
 
 # ------- Frequently used service daemons ---------- 
-_ssh=$(systemctl status ssh.service | sed -n 3p | cut -d":" -f2)
-print_one_line "SSH daemon: " "$_ssh"
+# add your interests
+procs_of_interest=$(ps -eo 'tty,pid,comm' | grep -Ei 'blue|chrome|ssh' | awk '{print $3}' | uniq -u )
+print_one_line "processes of interest" 
+echo $procs_of_interest
