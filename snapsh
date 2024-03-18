@@ -137,4 +137,28 @@ if [ $? -eq 0  ] ; then
     print_one_line "Net Status:[+]Connected"
     gateway=$(ip route | grep "default" | cut -d" " -f3)
     print_one_line "gateway(router) IP:" "$gateway"
-    local_IP
+    local_IP=$(hostname -I)
+    print_one_line "local IP: " "$local_IP"
+    pub_IP=$(host  myip.opendns.com resolver1.opendns.com | grep "address" | awk '{print $4}')
+    print_one_line "public IP:" "$pub_IP"
+else
+     print_one_line "Net Status:[-]Not Connected"   
+     
+fi
+connections=$(sudo ss | grep tcp | awk '{print $5, $6}')
+
+# Get the ethernet interface name
+iface=$(ip addr | awk '/enp/ {print $2; exit}' | tr -d ':')
+print_alert "Ethernet network connections: " "$connections"
+down_bytes=$(cat /proc/net/dev | grep $iface  | awk '{print $2}')
+up_bytes=$(cat /proc/net/dev | grep $iface  | awk '{print $10}')
+print_one_line "downloaded data (Megabytes): " 
+convert_to_mb "$down_bytes"
+print_one_line "uploaded data (Megabytes): " 
+convert_to_mb "$up_bytes"
+
+# ------- Frequently used service daemons ---------- 
+# add your interests
+procs_of_interest=$(ps -eo 'tty,pid,comm' | grep -Ei 'blue|chrome|ssh' | awk '{print $3}' | uniq -u )
+print_one_line "processes of interest" 
+echo $procs_of_interest
