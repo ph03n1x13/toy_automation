@@ -7,7 +7,7 @@
 # Date: December 2, 2017 Sunday
 #==========================================================================================
 
- # literally clear the screen
+# literally clear the screen
 printf "\033c"
 
 #------- Utility methods -----------------------
@@ -39,9 +39,9 @@ convert_to_mb(){
 }
 
 # ----------------- Date Time info -------------------
-_time=`date`
+_time=$(date)
 print_info "Date: " "$_time"
-uptime=`uptime | awk '{print $3 $4}' | cut -f1 -d , `
+uptime=$(uptime | awk '{print $3 $4}' | cut -f1 -d , )
 print_info "uptime Day(s)/(H:M)-> " "$uptime"
 my_shell=$(echo $SHELL)
 print_info "shell env: " "$my_shell" 
@@ -58,7 +58,7 @@ packages=$(apt-cache pkgnames | wc -l)
 print_info "installed packages: " "$packages"
 
 print_one_line "systems users other than root"
-systems_users=$(awk -F':' '$3 >= 1000 {print $1 " " $3 " " $4 " " $5 " " $6 " " $7}' /etc/passwd)
+systems_users=$(awk -F':' '$3 >= 100 {print $1 " " $3 " " $4 " " $5 " " $6 " " $7}' /etc/passwd)
 print_info "systems users: " "$systems_users"
 
 # -------------------- Battery Info 
@@ -114,9 +114,9 @@ max_cap=$(dmidecode -t 16 | grep "Maximum" | awk '{print $3$4}')
 echo "max capacity: $max_cap"
 total=$(cat /proc/meminfo | grep "^MemTotal"| awk '{print $2}' )
 free=$(cat /proc/meminfo | grep "^MemFree"| awk '{print $2}' )
-Mtotal=`echo "scale=2;$total / (1024 *1024) " | bc`
-Mfree=`echo "scale=2;$free / (1024*1024)" |bc`
-used=`echo "scale=2; $Mtotal - $Mfree"|bc`
+Mtotal=$(echo "scale=2;$total / (1024 *1024) " | bc)
+Mfree=$(echo "scale=2;$free / (1024*1024)" |bc)
+used=$(echo "scale=2; $Mtotal - $Mfree"|bc)
 swapKB=$(cat /proc/swaps | grep "swap" | awk '{print $3}')
 swapGB=$(echo "scale=2; 3145724 / (1024*1024)" | bc)
 echo "total: $Mtotal Gib"
@@ -125,7 +125,7 @@ echo "free: $Mfree Gib"
 echo "swap: $swapGB GiB"
 
 # --------- Disk Info --------------------
-disk_usage=`df -h  | grep "File\|^/dev/sd*"` 
+disk_usage=$(df -h  | grep "File\|^/dev/sd*") 
 print_one_line "disk use [*Mounted]: "
 echo "$disk_usage"
 
@@ -137,28 +137,4 @@ if [ $? -eq 0  ] ; then
     print_one_line "Net Status:[+]Connected"
     gateway=$(ip route | grep "default" | cut -d" " -f3)
     print_one_line "gateway(router) IP:" "$gateway"
-    local_IP=`hostname -I`
-    print_one_line "local IP: " "$local_IP"
-    pub_IP=$(host  myip.opendns.com resolver1.opendns.com | grep "address" | awk '{print $4}')
-    print_one_line "public IP:" "$pub_IP"
-else
-     print_one_line "Net Status:[-]Not Connected"   
-     
-fi
-connections=$(sudo ss | grep tcp | awk '{print $5, $6}')
-
-# Get the ethernet interface name
-iface=$(ip addr | awk '/enp/ {print $2; exit}' | tr -d ':')
-print_alert "Ethernet network connections: " "$connections"
-down_bytes=$(cat /proc/net/dev | grep $iface  | awk '{print $2}')
-up_bytes=$(cat /proc/net/dev | grep $iface  | awk '{print $10}')
-print_one_line "downloaded data (Megabytes): " 
-convert_to_mb "$down_bytes"
-print_one_line "uploaded data (Megabytes): " 
-convert_to_mb "$up_bytes"
-
-# ------- Frequently used service daemons ---------- 
-# add your interests
-procs_of_interest=$(ps -eo 'tty,pid,comm' | grep -Ei 'blue|chrome|ssh' | awk '{print $3}' | uniq -u )
-print_one_line "processes of interest" 
-echo $procs_of_interest
+    local_IP
