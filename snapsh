@@ -148,14 +148,27 @@ fi
 connections=$(sudo ss | grep tcp | awk '{print $5, $6}')
 
 # Get the ethernet interface name
-iface=$(ip addr | awk '/enp/ {print $2; exit}' | tr -d ':')
+eth_iface=$(ip addr | awk '/enp/ {print $2; exit}' | tr -d ':')
+wifi_iface=$(ip addr | awk '/wlp/ {print $2; exit}' | tr -d ':')
+
 print_alert "Ethernet network connections: " "$connections"
-down_bytes=$(cat /proc/net/dev | grep $iface  | awk '{print $2}')
-up_bytes=$(cat /proc/net/dev | grep $iface  | awk '{print $10}')
-print_one_line "downloaded data (Megabytes): " 
+print_one_line "ethernet download/upload"
+down_bytes=$(cat /proc/net/dev | grep $eth_iface  | awk '{print $2}')
+up_bytes=$(cat /proc/net/dev | grep $eth_iface  | awk '{print $10}')
+print_one_line "$eth_iface downloaded data (Megabytes): " 
 convert_to_mb "$down_bytes"
-print_one_line "uploaded data (Megabytes): " 
+print_one_line "$eth_iface uploaded data (Megabytes): " 
 convert_to_mb "$up_bytes"
+
+print_one_line "wifi download/upload"
+down_bytes=$(cat /proc/net/dev | grep $wifi_iface  | awk '{print $2}')
+up_bytes=$(cat /proc/net/dev | grep $wifi_iface  | awk '{print $10}')
+print_one_line "$wifi_iface downloaded data (Megabytes): " 
+convert_to_mb "$down_bytes"
+print_one_line "$wifi_iface uploaded data (Megabytes): " 
+convert_to_mb "$up_bytes"
+
+
 
 # ------- Frequently used service daemons ---------- 
 # add your interests
