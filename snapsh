@@ -139,7 +139,7 @@ if [ $? -eq 0  ] ; then
     print_one_line "gateway(router) IP:" "$gateway"
     local_IP=$(hostname -I)
     print_one_line "local IP: " "$local_IP"
-    pub_IP=$(host  myip.opendns.com resolver1.opendns.com | grep "address" | awk '{print $4}')
+    pub_IP=$(host  -4 myip.opendns.com resolver1.opendns.com | grep "address" | awk '{print $4}')
     print_one_line "public IP:" "$pub_IP"
 else
      print_one_line "Net Status:[-]Not Connected"   
@@ -151,23 +151,32 @@ connections=$(sudo ss | grep tcp | awk '{print $5, $6}')
 eth_iface=$(ip addr | awk '/enp/ {print $2; exit}' | tr -d ':')
 wifi_iface=$(ip addr | awk '/wlp/ {print $2; exit}' | tr -d ':')
 
-print_alert "Ethernet network connections: " "$connections"
-print_one_line "ethernet download/upload"
-down_bytes=$(cat /proc/net/dev | grep $eth_iface  | awk '{print $2}')
-up_bytes=$(cat /proc/net/dev | grep $eth_iface  | awk '{print $10}')
-print_one_line "$eth_iface downloaded data (Megabytes): " 
-convert_to_mb "$down_bytes"
-print_one_line "$eth_iface uploaded data (Megabytes): " 
-convert_to_mb "$up_bytes"
+if [[ -z $wifi_iface ]]; then
+    print_alert "wifi_iface not found $wifi_iface"
 
-print_one_line "wifi download/upload"
-down_bytes=$(cat /proc/net/dev | grep $wifi_iface  | awk '{print $2}')
-up_bytes=$(cat /proc/net/dev | grep $wifi_iface  | awk '{print $10}')
-print_one_line "$wifi_iface downloaded data (Megabytes): " 
-convert_to_mb "$down_bytes"
-print_one_line "$wifi_iface uploaded data (Megabytes): " 
-convert_to_mb "$up_bytes"
+else
+    print_one_line "wifi download/upload"
+    down_bytes=$(cat /proc/net/dev | grep $wifi_iface  | awk '{print $2}')
+    up_bytes=$(cat /proc/net/dev | grep $wifi_iface  | awk '{print $10}')
+    print_one_line "$wifi_iface downloaded data (Megabytes): " 
+    convert_to_mb "$down_bytes"
+    print_one_line "$wifi_iface uploaded data (Megabytes): " 
+    convert_to_mb "$up_bytes"
+fi 
 
+if [[ -z $eth_iface ]]; then
+    print_alert "eth_iface not found $eth_iface"
+
+else
+    print_alert "Ethernet network connections: " "$connections"
+    print_one_line "ethernet download/upload"
+    down_bytes=$(cat /proc/net/dev | grep $eth_iface  | awk '{print $2}')
+    up_bytes=$(cat /proc/net/dev | grep $eth_iface  | awk '{print $10}')
+    print_one_line "$eth_iface downloaded data (Megabytes): " 
+    convert_to_mb "$down_bytes"
+    print_one_line "$eth_iface uploaded data (Megabytes): " 
+    convert_to_mb "$up_bytes"
+fi 
 
 
 # ------- Frequently used service daemons ---------- 
